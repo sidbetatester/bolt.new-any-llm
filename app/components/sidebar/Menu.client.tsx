@@ -144,15 +144,18 @@ export function Menu() {
       input.onchange = async (e) => {
         try {
           const file = (e.target as HTMLInputElement).files?.[0];
+
           if (!file) {
             throw new Error('No file selected');
           }
 
           const reader = new FileReader();
+
           reader.onload = async (e) => {
             try {
               const content = e.target?.result as string;
               logger.info('Parsing backup file content:', content.slice(0, 200) + '...');
+
               const backupData = JSON.parse(content);
 
               // Basic validation with detailed logging
@@ -162,7 +165,7 @@ export function Menu() {
                 hasHistory: !!backupData.history,
                 historyIsArray: Array.isArray(backupData.history),
                 historyLength: backupData.history?.length,
-                rawKeys: Object.keys(backupData)
+                rawKeys: Object.keys(backupData),
               });
 
               if (!db) {
@@ -180,23 +183,23 @@ export function Menu() {
                 chatHistory = Object.values(backupData.boltHistory.chats || {});
                 logger.info('Detected Chrome extension backup format', {
                   itemCount: chatHistory.length,
-                  sampleItem: chatHistory[0]
+                  sampleItem: chatHistory[0],
                 });
               } else if (Array.isArray(backupData)) {
                 // Direct array format
                 chatHistory = backupData;
               } else {
                 // Try to find any object with chat-like properties
-                const possibleChats = Object.values(backupData).find(value =>
-                  Array.isArray(value) ||
-                  (typeof value === 'object' && value !== null && 'messages' in value)
+                const possibleChats = Object.values(backupData).find(
+                  (value) =>
+                    Array.isArray(value) || (typeof value === 'object' && value !== null && 'messages' in value),
                 );
 
                 if (possibleChats) {
                   chatHistory = Array.isArray(possibleChats) ? possibleChats : [possibleChats];
                   logger.info('Found possible chat data in alternate format', {
                     itemCount: chatHistory.length,
-                    sampleItem: chatHistory[0]
+                    sampleItem: chatHistory[0],
                   });
                 } else {
                   throw new Error('Unrecognized backup file format');
@@ -204,30 +207,34 @@ export function Menu() {
               }
 
               // Validate and normalize chat items
-              const normalizedHistory = chatHistory.map(item => {
+              const normalizedHistory = chatHistory.map((item: any) => {
                 if (!item.id || !Array.isArray(item.messages)) {
                   throw new Error('Invalid chat item format');
                 }
+
                 return {
                   id: item.id,
                   messages: item.messages,
                   urlId: item.urlId || item.id,
-                  description: item.description || `Imported chat ${item.id}`
+                  description: item.description || `Imported chat ${item.id}`,
                 };
               });
 
               // Store each chat history item
               logger.info('Starting import of chat history items');
+
               for (const item of normalizedHistory) {
                 logger.info('Importing chat item:', { id: item.id, description: item.description });
                 await setMessages(db, item.id, item.messages, item.urlId, item.description);
               }
 
               toast.success(`Successfully imported ${normalizedHistory.length} chats`);
+
               // Reload the page to show imported chats
               window.location.reload();
             } catch (error) {
               logger.error('Failed to process backup file:', error);
+
               // More detailed error message
               if (error instanceof Error) {
                 toast.error(`Failed to process backup file: ${error.message}`);
@@ -239,6 +246,7 @@ export function Menu() {
           reader.readAsText(file);
         } catch (error) {
           logger.error('Failed to read backup file:', error);
+
           if (error instanceof Error) {
             toast.error(`Failed to read backup file: ${error.message}`);
           } else {
@@ -250,6 +258,7 @@ export function Menu() {
       input.click();
     } catch (error) {
       logger.error('Failed to import chat history:', error);
+
       if (error instanceof Error) {
         toast.error(`Failed to import chat history: ${error.message}`);
       } else {

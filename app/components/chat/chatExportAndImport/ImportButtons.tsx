@@ -7,12 +7,12 @@ const processChatData = (data: any): { description: string; messages: Message[] 
   if (data.messages && Array.isArray(data.messages)) {
     return [{ description: data.description || 'Imported Chat', messages: data.messages }];
   }
-  
+
   // Handle Chrome extension format
   if (data.boltHistory?.chats) {
     return Object.values(data.boltHistory.chats).map((chat: any) => ({
       description: chat.description || 'Imported Chat',
-      messages: chat.messages
+      messages: chat.messages,
     }));
   }
 
@@ -20,7 +20,7 @@ const processChatData = (data: any): { description: string; messages: Message[] 
   if (data.history && Array.isArray(data.history)) {
     return data.history.map((chat: any) => ({
       description: chat.description || 'Imported Chat',
-      messages: chat.messages
+      messages: chat.messages,
     }));
   }
 
@@ -47,11 +47,11 @@ export function ImportButtons(importChat: ((description: string, messages: Messa
                   const content = e.target?.result as string;
                   const data = JSON.parse(content);
                   const chats = processChatData(data);
-                  
+
                   for (const chat of chats) {
                     await importChat(chat.description, chat.messages);
                   }
-                  
+
                   toast.success(`Successfully imported ${chats.length} chat${chats.length > 1 ? 's' : ''}`);
                 } catch (error: unknown) {
                   if (error instanceof Error) {
